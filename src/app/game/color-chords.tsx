@@ -15,6 +15,7 @@ const swatchColors = ["#FF6B6B", "#FFB347", "#FFFF66", "#90EE90", "#87CEEB"];
 let ctx: AudioContext | null = null;
 
 export default function ColorChords() {
+  const [gameStarted, setGameStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [colorOptions, setColorOptions] = useState<number[]>([]);
   const [correctIndex, setCorrectIndex] = useState(0);
@@ -58,6 +59,11 @@ export default function ColorChords() {
     }, 1000);
   }, [makeSound]);
 
+  const startGame = useCallback(() => {
+    setGameStarted(true);
+    beginNewRound();
+  }, [beginNewRound]);
+
   const onSwatchClick = useCallback(
     (selectedIndex: number) => {
       if (selectedIndex === correctIndex) {
@@ -68,6 +74,24 @@ export default function ColorChords() {
     },
     [correctIndex, beginNewRound],
   );
+
+  if (!gameStarted) {
+    return (
+      <div
+        className="relative flex min-h-screen items-center justify-center"
+        style={{ backgroundColor: "#0f172a" }}
+      >
+        <button
+          onClick={startGame}
+          className="group relative h-64 w-64 rounded-full bg-gradient-to-r from-white to-gray-100 shadow-2xl transition-all duration-500 hover:scale-110"
+        >
+          <div className="absolute inset-8 flex items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-blue-500">
+            <div className="ml-4 h-0 w-0 border-t-[24px] border-b-[24px] border-l-[36px] border-t-transparent border-b-transparent border-l-white"></div>
+          </div>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -82,33 +106,18 @@ export default function ColorChords() {
       )}
 
       {!isPlaying && colorOptions.length === 0 && (
-        <div className="space-y-16 text-center">
-          <div className="flex justify-center space-x-6">
-            {swatchColors.map((color, index) => (
-              <div
-                key={index}
-                className="h-20 w-20 animate-pulse rounded-full shadow-lg"
-                style={{
-                  backgroundColor: color,
-                  animationDelay: `${index * 0.3}s`,
-                }}
-              />
-            ))}
+        <button
+          onClick={beginNewRound}
+          className="group relative h-24 w-24 rounded-full bg-gradient-to-r from-white to-gray-200 shadow-xl transition-all duration-300 hover:scale-110"
+        >
+          <div className="absolute inset-2 flex items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-blue-500">
+            <div className="ml-1 h-0 w-0 border-t-[8px] border-b-[8px] border-l-[12px] border-t-transparent border-b-transparent border-l-white"></div>
           </div>
-
-          <button
-            onClick={beginNewRound}
-            className="group relative h-24 w-24 rounded-full bg-gradient-to-r from-white to-gray-200 shadow-xl transition-all duration-300 hover:scale-110"
-          >
-            <div className="absolute inset-2 flex items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-blue-500">
-              <div className="ml-1 h-0 w-0 border-t-[8px] border-b-[8px] border-l-[12px] border-t-transparent border-b-transparent border-l-white"></div>
-            </div>
-          </button>
-        </div>
+        </button>
       )}
 
       {!isPlaying && colorOptions.length > 0 && (
-        <div className="grid grid-cols-3 gap-8">
+        <div className="mt-16 grid grid-cols-3 gap-8">
           {colorOptions.map((colorIdx, position) => (
             <button
               key={position}
