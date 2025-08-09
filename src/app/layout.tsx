@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Color Chords",
   description:
     "Match colors to sounds by instinct - a musical color matching game",
-  icons: [{ rel: "icon", url: "/logo.jpg" }],
+  icons: [{ rel: "icon", url: "/lg2.svg" }],
 };
 
 const geist = Geist({

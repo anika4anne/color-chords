@@ -72,12 +72,17 @@ export default function ColorChords() {
     return shuffled;
   }, []);
 
-  const [shuffledSongs, setShuffledSongs] = useState(() =>
-    shuffleArray(availableSongs),
-  );
+  const [shuffledSongs, setShuffledSongs] = useState<typeof availableSongs>([]);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
-  const currentSong = shuffledSongs[currentSongIndex]!;
-  const currentSongTitle = currentSong.title;
+
+  useEffect(() => {
+    if (shuffledSongs.length === 0) {
+      setShuffledSongs(shuffleArray(availableSongs));
+    }
+  }, [shuffledSongs.length, shuffleArray, availableSongs]);
+
+  const currentSong = shuffledSongs[currentSongIndex] || availableSongs[0];
+  const currentSongTitle = currentSong?.title || availableSongs[0]?.title || "";
   const colorNamesList = useMemo(
     () => ["red", "orange", "yellow", "green", "blue", "purple"],
     [],
@@ -201,12 +206,13 @@ export default function ColorChords() {
 
   const kickOffTheGame = useCallback(async () => {
     console.log("startGame clicked");
+    if (!currentSong) return;
     try {
       await loadSong(currentSong.file);
     } catch (error) {
       console.error("Failed to load song:", error);
     }
-  }, [currentSong.file, loadSong]);
+  }, [currentSong, loadSong]);
 
   useEffect(() => {
     return () => {
@@ -299,7 +305,10 @@ export default function ColorChords() {
           onPlay={() => console.log("Audio is playing")}
           onPause={() => console.log("Audio paused")}
         >
-          <source src={`/mp3/${currentSong.file}`} type="audio/mpeg" />
+          <source
+            src={`/mp3/${currentSong?.file || availableSongs[0]?.file}`}
+            type="audio/mpeg"
+          />
         </audio>
 
         <audio
@@ -312,16 +321,19 @@ export default function ColorChords() {
           onPlay={() => console.log("Background music is playing")}
           onPause={() => console.log("Background music paused")}
         >
-          <source src={`/mp3/${currentSong.file}`} type="audio/mpeg" />
+          <source
+            src={`/mp3/${currentSong?.file || availableSongs[0]?.file}`}
+            type="audio/mpeg"
+          />
         </audio>
 
         <div className="group relative">
-          <div className="absolute -inset-8 animate-pulse rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 opacity-20 blur-2xl transition-opacity duration-500 group-hover:opacity-40"></div>
+          <div className="absolute -inset-8 animate-pulse rounded-full bg-cyan-400 opacity-20 blur-2xl transition-opacity duration-500 group-hover:opacity-40"></div>
           <button
             onClick={kickOffTheGame}
             className="relative h-72 w-72 rounded-full bg-gradient-to-r from-white to-gray-100 shadow-2xl transition-all duration-500 hover:scale-110 hover:shadow-[0_0_80px_rgba(139,69,19,0.3)]"
           >
-            <div className="absolute inset-8 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 shadow-2xl">
+            <div className="absolute inset-8 flex items-center justify-center rounded-full bg-cyan-400 shadow-2xl">
               <div className="ml-4 h-0 w-0 border-t-[28px] border-b-[28px] border-l-[42px] border-t-transparent border-b-transparent border-l-white drop-shadow-lg"></div>
             </div>
           </button>
