@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 const noteFreqs = {
   C: 261.63,
@@ -19,6 +19,11 @@ export default function ColorChords() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [colorOptions, setColorOptions] = useState<number[]>([]);
   const [correctIndex, setCorrectIndex] = useState(0);
+  const [audioData, setAudioData] = useState<number[]>([]);
+
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationRef = useRef<number | undefined>(undefined);
 
   const makeSound = useCallback((frequency: number) => {
     if (!ctx) {
@@ -59,10 +64,56 @@ export default function ColorChords() {
     }, 1000);
   }, [makeSound]);
 
+  const setupAudioAnalyser = useCallback(() => {
+    if (!audioRef.current || analyserRef.current) return;
+
+    if (!ctx) ctx = new AudioContext();
+
+    const source = ctx.createMediaElementSource(audioRef.current);
+    const analyser = ctx.createAnalyser();
+
+    analyser.fftSize = 64;
+    source.connect(analyser);
+    analyser.connect(ctx.destination);
+
+    analyserRef.current = analyser;
+  }, []);
+
+  const updateAudioData = useCallback(() => {
+    if (!analyserRef.current) return;
+
+    const bufferLength = analyserRef.current.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyserRef.current.getByteFrequencyData(dataArray);
+
+    const normalizedData = Array.from(dataArray).map((value) => value / 255);
+    setAudioData(normalizedData.slice(0, 8));
+
+    animationRef.current = requestAnimationFrame(updateAudioData);
+  }, []);
+
+  const startBackgroundMusic = useCallback(() => {
+    if (!audioRef.current) return;
+
+    setupAudioAnalyser();
+    audioRef.current.volume = 0.3;
+    audioRef.current.play();
+    updateAudioData();
+  }, [setupAudioAnalyser, updateAudioData]);
+
   const startGame = useCallback(() => {
     setGameStarted(true);
+    startBackgroundMusic();
     beginNewRound();
-  }, [beginNewRound]);
+  }, [beginNewRound, startBackgroundMusic]);
+
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
 
   const onSwatchClick = useCallback(
     (selectedIndex: number) => {
@@ -81,6 +132,10 @@ export default function ColorChords() {
         className="relative flex min-h-screen items-center justify-center"
         style={{ backgroundColor: "#0f172a" }}
       >
+        <audio ref={audioRef} loop>
+          <source src="/mp3/shape-of-you.mp3" type="audio/mpeg" />
+        </audio>
+
         <button
           onClick={startGame}
           className="group relative h-64 w-64 rounded-full bg-gradient-to-r from-white to-gray-100 shadow-2xl transition-all duration-500 hover:scale-110"
@@ -117,25 +172,31 @@ export default function ColorChords() {
       )}
 
       {!isPlaying && colorOptions.length > 0 && (
-        <div className="mt-16 grid grid-cols-3 gap-8">
-          {colorOptions.map((colorIdx, position) => (
-            <button
-              key={position}
-              onClick={() => onSwatchClick(colorIdx)}
-              className="h-24 w-24 rounded-full transition-transform hover:scale-110"
-              style={{ backgroundColor: swatchColors[colorIdx] }}
-            />
-          ))}
+        <div className="space-y-8 text-center">
+          <div className="flex items-end justify-center space-x-3">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="w-4 rounded-full bg-cyan-400 transition-all duration-75"
+                style={{
+                  height: `${20 + (audioData[index] || 0) * 80}px`,
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="grid grid-cols-3 gap-8">
+            {colorOptions.map((colorIdx, position) => (
+              <button
+                key={position}
+                onClick={() => onSwatchClick(colorIdx)}
+                className="h-24 w-24 rounded-full transition-transform hover:scale-110"
+                style={{ backgroundColor: swatchColors[colorIdx] }}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
-  );
-}
-
-export function PlayButton() {
-  return (
-    <button className="play-button" style={{}}>
-      ▶
-    </button>
   );
 }
