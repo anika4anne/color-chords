@@ -40,9 +40,7 @@ export default function ColorChords() {
   const animationRef = useRef<number | undefined>(undefined);
 
   const makeSound = useCallback((frequency: number) => {
-    if (!ctx) {
-      ctx = new AudioContext();
-    }
+    ctx ??= new AudioContext();
 
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
@@ -75,13 +73,13 @@ export default function ColorChords() {
       setColorOptions(indices);
       setIsPlaying(false);
     }, 1000);
-  }, [makeSound]);
+  }, []);
 
   const setupAudioAnalyser = useCallback(() => {
     if (!audioRef.current || analyserRef.current) return;
 
     try {
-      if (!ctx) ctx = new AudioContext();
+      ctx ??= new AudioContext();
 
       const source = ctx.createMediaElementSource(audioRef.current);
       const analyser = ctx.createAnalyser();
@@ -110,19 +108,6 @@ export default function ColorChords() {
     animationRef.current = requestAnimationFrame(updateAudioData);
   }, []);
 
-  const startBackgroundMusic = useCallback(async () => {
-    if (!audioRef.current) return;
-
-    try {
-      setupAudioAnalyser();
-      audioRef.current.volume = 0.3;
-      await audioRef.current.play();
-      updateAudioData();
-    } catch (error) {
-      console.log("Audio play failed:", error);
-    }
-  }, [setupAudioAnalyser, updateAudioData]);
-
   const startGame = useCallback(async () => {
     console.log("startGame clicked");
 
@@ -133,7 +118,7 @@ export default function ColorChords() {
     gameAudioRef.current = audio;
 
     try {
-      if (!ctx) ctx = new AudioContext();
+      ctx ??= new AudioContext();
       const source = ctx.createMediaElementSource(audio);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 64;
@@ -175,7 +160,7 @@ export default function ColorChords() {
 
       setColorHistory((prevHistory) => {
         const newHistory = [...prevHistory];
-        newHistory[selectedIndex] = (newHistory[selectedIndex] || 0) + 1;
+        newHistory[selectedIndex] = (newHistory[selectedIndex] ?? 0) + 1;
         return newHistory;
       });
 
@@ -300,7 +285,7 @@ export default function ColorChords() {
           />
           <div className="flex flex-col space-y-3">
             {swatchColors.map((color, index) => {
-              const count = colorHistory[index] || 0;
+              const count = colorHistory[index] ?? 0;
               const maxCount = Math.max(...colorHistory, 1);
               const barWidth = (count / maxCount) * 200;
               return (
