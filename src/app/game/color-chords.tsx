@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 
 const musicalNotes = {
   C: 261.63,
@@ -11,12 +11,12 @@ const musicalNotes = {
 };
 
 const gameColors = [
-  "#FF6B6B",
-  "#FFB347",
-  "#FFFF66",
-  "#90EE90",
-  "#87CEEB",
-  "#DA70D6",
+  "#FF6B6B", // red
+  "#FFB347", // orange
+  "#FFFF66", // yellow
+  "#90EE90", // green
+  "#40E0D0", // blue
+  "#DA70D6", // purple
 ];
 
 let audioSystem: AudioContext | null = null;
@@ -42,16 +42,24 @@ export default function ColorChords() {
   const audioAnalyzer = useRef<AnalyserNode | null>(null);
   const visualizationLoop = useRef<number | undefined>(undefined);
 
-  const availableSongs = [
-    { title: "Shape of You", file: "shape-of-you.mp3" },
-    { title: "Believer", file: "believer.mp3" },
-    { title: "Blank Space", file: "blank-space.mp3" },
-    { title: "Counting Stars", file: "counting-stars.mp3" },
-    { title: "Party For You", file: "party4u.mp3" },
-    { title: "Roar", file: "roar.mp3" },
-    { title: "Let It Go", file: "let-it-go.mp3" },
-    { title: "Fein", file: "fein.mp3" },
-  ];
+  const availableSongs = useMemo(
+    () => [
+      { title: "Shape of You", file: "shape-of-you.mp3" },
+      { title: "Believer", file: "believer.mp3" },
+      { title: "Blank Space", file: "blank-space.mp3" },
+      { title: "Counting Stars", file: "counting-stars.mp3" },
+      { title: "Party For You", file: "party4u.mp3" },
+      { title: "Roar", file: "roar.mp3" },
+      { title: "Let It Go", file: "let-it-go.mp3" },
+      { title: "Fein", file: "fein.mp3" },
+      { title: "Wake Me Up", file: "wake-me-up.mp3" },
+      { title: "Ordinary", file: "ordinary.mp3" },
+      { title: "Golden", file: "golden.mp3" },
+      { title: "Run", file: "run.mp3" },
+      { title: "As It Was", file: "as-it-was.mp3" },
+    ],
+    [],
+  );
 
   const shuffleArray = useCallback((array: typeof availableSongs) => {
     const shuffled = [...array];
@@ -70,13 +78,16 @@ export default function ColorChords() {
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const currentSong = shuffledSongs[currentSongIndex]!;
   const currentSongTitle = currentSong.title;
-  const colorNamesList = ["red", "orange", "yellow", "green", "blue", "purple"];
+  const colorNamesList = useMemo(
+    () => ["red", "orange", "yellow", "green", "blue", "purple"],
+    [],
+  );
 
   const rememberPlayerChoices = useCallback(
     (songName: string, votes: number[]) => {
       const existingChoices: Record<string, number[]> = JSON.parse(
         localStorage.getItem("colorChordsStats") ?? "{}",
-      );
+      ) as Record<string, number[]>;
       existingChoices[songName] = votes;
       localStorage.setItem("colorChordsStats", JSON.stringify(existingChoices));
       setAllPlayerStats(existingChoices);
@@ -94,7 +105,7 @@ export default function ColorChords() {
   const loadPreviousChoices = useCallback(() => {
     const savedChoices: Record<string, number[]> = JSON.parse(
       localStorage.getItem("colorChordsStats") ?? "{}",
-    );
+    ) as Record<string, number[]>;
     setAllPlayerStats(savedChoices);
 
     if (savedChoices[currentSongTitle]) {
@@ -190,7 +201,11 @@ export default function ColorChords() {
 
   const kickOffTheGame = useCallback(async () => {
     console.log("startGame clicked");
-    loadSong(currentSong.file);
+    try {
+      await loadSong(currentSong.file);
+    } catch (error) {
+      console.error("Failed to load song:", error);
+    }
   }, [currentSong.file, loadSong]);
 
   useEffect(() => {
@@ -201,7 +216,7 @@ export default function ColorChords() {
     };
   }, []);
 
-  const goToNextSong = useCallback(() => {
+  const goToNextSong = useCallback(async () => {
     const nextIndex = currentSongIndex + 1;
 
     if (nextIndex >= shuffledSongs.length) {
@@ -211,14 +226,22 @@ export default function ColorChords() {
       setShouldShowResults(false);
       setPlayerChoice(null);
       setAvailableColors([]);
-      loadSong(newShuffledSongs[0]!.file);
+      try {
+        await loadSong(newShuffledSongs[0]!.file);
+      } catch (error) {
+        console.error("Failed to load song:", error);
+      }
     } else {
       const nextSong = shuffledSongs[nextIndex]!;
       setCurrentSongIndex(nextIndex);
       setShouldShowResults(false);
       setPlayerChoice(null);
       setAvailableColors([]);
-      loadSong(nextSong.file);
+      try {
+        await loadSong(nextSong.file);
+      } catch (error) {
+        console.error("Failed to load song:", error);
+      }
     }
   }, [currentSongIndex, shuffledSongs, shuffleArray, availableSongs, loadSong]);
 
@@ -356,10 +379,10 @@ export default function ColorChords() {
             {musicVisualization.map((value, index) => (
               <div
                 key={index}
-                className="w-6 rounded-t-lg bg-cyan-500 shadow-lg shadow-cyan-500/50 transition-all duration-75 ease-out"
+                className="w-6 rounded-t-lg bg-cyan-400 shadow-lg shadow-cyan-400/50 transition-all duration-75 ease-out"
                 style={{
                   height: `${Math.max(8, value * 120)}px`,
-                  filter: `drop-shadow(0 0 ${value * 20}px rgb(6, 182, 212))`,
+                  filter: `drop-shadow(0 0 ${value * 20}px rgb(34, 211, 238)) brightness(0.8)`,
                 }}
               />
             ))}
@@ -441,7 +464,13 @@ export default function ColorChords() {
           <div className="group relative">
             <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 opacity-30 blur-lg transition-opacity duration-300 group-hover:opacity-60"></div>
             <button
-              onClick={goToNextSong}
+              onClick={async () => {
+                try {
+                  await goToNextSong();
+                } catch (error) {
+                  console.error("Failed to go to next song:", error);
+                }
+              }}
               className="relative h-20 w-20 rounded-full bg-gradient-to-r from-green-400 to-green-600 shadow-2xl transition-all duration-300 hover:scale-110 hover:from-green-500 hover:to-green-700 hover:shadow-[0_0_40px_rgba(34,197,94,0.5)]"
             >
               <div className="absolute inset-2 flex items-center justify-center rounded-full">
