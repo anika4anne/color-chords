@@ -44,19 +44,19 @@ export default function ColorChords() {
 
   const availableSongs = useMemo(
     () => [
-      { title: "Shape of You", file: "shape-of-you.mp3" },
-      { title: "Believer", file: "believer.mp3" },
-      { title: "Blank Space", file: "blank-space.mp3" },
-      { title: "Counting Stars", file: "counting-stars.mp3" },
-      { title: "Party For You", file: "party4u.mp3" },
-      { title: "Roar", file: "roar.mp3" },
-      { title: "Let It Go", file: "let-it-go.mp3" },
-      { title: "Fein", file: "fein.mp3" },
-      { title: "Wake Me Up", file: "wake-me-up.mp3" },
-      { title: "Ordinary", file: "ordinary.mp3" },
-      { title: "Golden", file: "golden.mp3" },
-      { title: "Run", file: "run.mp3" },
-      { title: "As It Was", file: "as-it-was.mp3" },
+      { title: "", file: "shape-of-you.mp3" },
+      { title: "", file: "believer.mp3" },
+      { title: "", file: "blank-space.mp3" },
+      { title: "", file: "counting-stars.mp3" },
+      { title: "", file: "party4u.mp3" },
+      { title: "", file: "roar.mp3" },
+      { title: "", file: "let-it-go.mp3" },
+      { title: "", file: "fein.mp3" },
+      { title: "", file: "wake-me-up.mp3" },
+      { title: "", file: "ordinary.mp3" },
+      { title: "", file: "golden.mp3" },
+      { title: "", file: "run.mp3" },
+      { title: "", file: "as-it-was.mp3" },
     ],
     [],
   );
@@ -81,8 +81,8 @@ export default function ColorChords() {
     }
   }, [shuffledSongs.length, shuffleArray, availableSongs]);
 
-  const currentSong = shuffledSongs[currentSongIndex] || availableSongs[0];
-  const currentSongTitle = currentSong?.title || availableSongs[0]?.title || "";
+  const currentSong = shuffledSongs[currentSongIndex] ?? availableSongs[0];
+  const currentSongTitle = currentSong?.title ?? availableSongs[0]?.title ?? "";
   const colorNamesList = useMemo(
     () => ["red", "orange", "yellow", "green", "blue", "purple"],
     [],
@@ -306,7 +306,7 @@ export default function ColorChords() {
           onPause={() => console.log("Audio paused")}
         >
           <source
-            src={`/mp3/${currentSong?.file || availableSongs[0]?.file}`}
+            src={`/mp3/${currentSong?.file ?? availableSongs[0]?.file}`}
             type="audio/mpeg"
           />
         </audio>
@@ -322,7 +322,7 @@ export default function ColorChords() {
           onPause={() => console.log("Background music paused")}
         >
           <source
-            src={`/mp3/${currentSong?.file || availableSongs[0]?.file}`}
+            src={`/mp3/${currentSong?.file ?? availableSongs[0]?.file}`}
             type="audio/mpeg"
           />
         </audio>
