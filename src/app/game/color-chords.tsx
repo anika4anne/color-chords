@@ -316,12 +316,12 @@ export default function ColorChords() {
         </audio>
 
         <div className="group relative">
-          <div className="absolute -inset-8 animate-pulse rounded-full bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 opacity-20 blur-2xl transition-opacity duration-500 group-hover:opacity-40"></div>
+          <div className="absolute -inset-8 animate-pulse rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 opacity-20 blur-2xl transition-opacity duration-500 group-hover:opacity-40"></div>
           <button
             onClick={kickOffTheGame}
             className="relative h-72 w-72 rounded-full bg-gradient-to-r from-white to-gray-100 shadow-2xl transition-all duration-500 hover:scale-110 hover:shadow-[0_0_80px_rgba(139,69,19,0.3)]"
           >
-            <div className="absolute inset-8 flex items-center justify-center rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 shadow-2xl">
+            <div className="absolute inset-8 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 shadow-2xl">
               <div className="ml-4 h-0 w-0 border-t-[28px] border-b-[28px] border-l-[42px] border-t-transparent border-b-transparent border-l-white drop-shadow-lg"></div>
             </div>
           </button>
