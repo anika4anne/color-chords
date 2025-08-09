@@ -22,6 +22,8 @@ export default function ColorChords() {
   const [audioData, setAudioData] = useState<number[]>([]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const backgroundMusicRef = useRef<HTMLAudioElement>(null);
+  const gameAudioRef = useRef<HTMLAudioElement | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | undefined>(undefined);
 
@@ -56,7 +58,7 @@ export default function ColorChords() {
 
     setCorrectIndex(randomNoteIndex);
     setIsPlaying(true);
-    makeSound(frequencies[randomNoteIndex] || 261.63);
+    // makeSound(frequencies[randomNoteIndex] || 261.63); // Removed chord sound
 
     setTimeout(() => {
       setColorOptions(indices);
@@ -67,16 +69,22 @@ export default function ColorChords() {
   const setupAudioAnalyser = useCallback(() => {
     if (!audioRef.current || analyserRef.current) return;
 
-    if (!ctx) ctx = new AudioContext();
+    try {
+      if (!ctx) ctx = new AudioContext();
 
-    const source = ctx.createMediaElementSource(audioRef.current);
-    const analyser = ctx.createAnalyser();
+      const source = ctx.createMediaElementSource(audioRef.current);
+      const analyser = ctx.createAnalyser();
 
-    analyser.fftSize = 64;
-    source.connect(analyser);
-    analyser.connect(ctx.destination);
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      analyser.connect(ctx.destination);
 
-    analyserRef.current = analyser;
+      analyserRef.current = analyser;
+      console.log("Audio analyzer setup complete");
+    } catch (error) {
+      console.log("Audio analyzer setup failed:", error);
+      // If analyzer fails, just play the audio normally
+    }
   }, []);
 
   const updateAudioData = useCallback(() => {
@@ -92,20 +100,42 @@ export default function ColorChords() {
     animationRef.current = requestAnimationFrame(updateAudioData);
   }, []);
 
-  const startBackgroundMusic = useCallback(() => {
+  const startBackgroundMusic = useCallback(async () => {
     if (!audioRef.current) return;
 
-    setupAudioAnalyser();
-    audioRef.current.volume = 0.3;
-    audioRef.current.play();
-    updateAudioData();
+    try {
+      setupAudioAnalyser();
+      audioRef.current.volume = 0.3;
+      await audioRef.current.play();
+      updateAudioData();
+    } catch (error) {
+      console.log("Audio play failed:", error);
+    }
   }, [setupAudioAnalyser, updateAudioData]);
 
-  const startGame = useCallback(() => {
-    setGameStarted(true);
-    startBackgroundMusic();
-    beginNewRound();
-  }, [beginNewRound, startBackgroundMusic]);
+  const startGame = useCallback(async () => {
+    console.log("startGame clicked");
+
+    // EXACTLY the same as green button - no differences at all
+    console.log("Purple button - creating audio exactly like green button");
+    const audio = new Audio("/mp3/shape-of-you.mp3");
+    audio.volume = 1.0;
+    audio.loop = true; // Only difference - add looping
+    audio
+      .play()
+      .then(() => {
+        console.log("Purple button audio play successful");
+      })
+      .catch((e) => {
+        console.log("Purple button audio play failed:", e);
+      });
+
+    // Delay the game start to not interfere with audio
+    setTimeout(() => {
+      setGameStarted(true);
+      beginNewRound();
+    }, 100);
+  }, [beginNewRound]);
 
   useEffect(() => {
     return () => {
@@ -132,7 +162,29 @@ export default function ColorChords() {
         className="relative flex min-h-screen items-center justify-center"
         style={{ backgroundColor: "#0f172a" }}
       >
-        <audio ref={audioRef} loop>
+        <audio
+          ref={audioRef}
+          loop
+          preload="auto"
+          onError={(e) => console.log("Audio error:", e)}
+          onLoadStart={() => console.log("Audio loading started")}
+          onCanPlay={() => console.log("Audio can play")}
+          onPlay={() => console.log("Audio is playing")}
+          onPause={() => console.log("Audio paused")}
+        >
+          <source src="/mp3/shape-of-you.mp3" type="audio/mpeg" />
+        </audio>
+
+        <audio
+          ref={backgroundMusicRef}
+          loop
+          preload="auto"
+          onError={(e) => console.log("Background music error:", e)}
+          onLoadStart={() => console.log("Background music loading started")}
+          onCanPlay={() => console.log("Background music can play")}
+          onPlay={() => console.log("Background music is playing")}
+          onPause={() => console.log("Background music paused")}
+        >
           <source src="/mp3/shape-of-you.mp3" type="audio/mpeg" />
         </audio>
 
@@ -172,19 +224,7 @@ export default function ColorChords() {
       )}
 
       {!isPlaying && colorOptions.length > 0 && (
-        <div className="space-y-8 text-center">
-          <div className="flex items-end justify-center space-x-3">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <div
-                key={index}
-                className="w-4 rounded-full bg-cyan-400 transition-all duration-75"
-                style={{
-                  height: `${20 + (audioData[index] || 0) * 80}px`,
-                }}
-              />
-            ))}
-          </div>
-
+        <div className="text-center">
           <div className="grid grid-cols-3 gap-8">
             {colorOptions.map((colorIdx, position) => (
               <button
