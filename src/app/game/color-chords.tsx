@@ -10,7 +10,14 @@ const noteFreqs = {
   G: 392.0,
 };
 
-const swatchColors = ["#FF6B6B", "#FFB347", "#FFFF66", "#90EE90", "#87CEEB"];
+const swatchColors = [
+  "#FF6B6B", // red
+  "#FFB347", // orange
+  "#FFFF66", // yellow
+  "#90EE90", // green
+  "#87CEEB", // blue
+  "#DA70D6", // purple
+];
 
 let ctx: AudioContext | null = null;
 
@@ -20,6 +27,11 @@ export default function ColorChords() {
   const [colorOptions, setColorOptions] = useState<number[]>([]);
   const [correctIndex, setCorrectIndex] = useState(0);
   const [audioData, setAudioData] = useState<number[]>([]);
+  const [selectedColor, setSelectedColor] = useState<number | null>(null);
+  const [showBarGraph, setShowBarGraph] = useState(false);
+  const [colorHistory, setColorHistory] = useState<number[]>([
+    0, 0, 0, 0, 0, 0,
+  ]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const backgroundMusicRef = useRef<HTMLAudioElement>(null);
@@ -51,14 +63,13 @@ export default function ColorChords() {
     const randomNoteIndex = Math.floor(Math.random() * frequencies.length);
 
     const indices: number[] = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       indices.push(i);
     }
     indices.sort(() => Math.random() - 0.5);
 
     setCorrectIndex(randomNoteIndex);
     setIsPlaying(true);
-    // makeSound(frequencies[randomNoteIndex] || 261.63); // Removed chord sound
 
     setTimeout(() => {
       setColorOptions(indices);
@@ -83,7 +94,6 @@ export default function ColorChords() {
       console.log("Audio analyzer setup complete");
     } catch (error) {
       console.log("Audio analyzer setup failed:", error);
-      // If analyzer fails, just play the audio normally
     }
   }, []);
 
@@ -116,26 +126,40 @@ export default function ColorChords() {
   const startGame = useCallback(async () => {
     console.log("startGame clicked");
 
-    // EXACTLY the same as green button - no differences at all
     console.log("Purple button - creating audio exactly like green button");
     const audio = new Audio("/mp3/shape-of-you.mp3");
     audio.volume = 1.0;
-    audio.loop = true; // Only difference - add looping
+    audio.loop = true;
+    gameAudioRef.current = audio;
+
+    try {
+      if (!ctx) ctx = new AudioContext();
+      const source = ctx.createMediaElementSource(audio);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      analyser.connect(ctx.destination);
+      analyserRef.current = analyser;
+      console.log("Audio analyzer setup complete");
+    } catch (error) {
+      console.log("Audio analyzer setup failed:", error);
+    }
+
     audio
       .play()
       .then(() => {
         console.log("Purple button audio play successful");
+        updateAudioData(); // Start the visualizer
       })
       .catch((e) => {
         console.log("Purple button audio play failed:", e);
       });
 
-    // Delay the game start to not interfere with audio
     setTimeout(() => {
       setGameStarted(true);
       beginNewRound();
     }, 100);
-  }, [beginNewRound]);
+  }, [beginNewRound, updateAudioData]);
 
   useEffect(() => {
     return () => {
@@ -147,10 +171,21 @@ export default function ColorChords() {
 
   const onSwatchClick = useCallback(
     (selectedIndex: number) => {
+      setSelectedColor(selectedIndex);
+
+      setColorHistory((prevHistory) => {
+        const newHistory = [...prevHistory];
+        newHistory[selectedIndex] = (newHistory[selectedIndex] || 0) + 1;
+        return newHistory;
+      });
+
+      setShowBarGraph(true);
+
       if (selectedIndex === correctIndex) {
-        beginNewRound();
-      } else {
-        setColorOptions([]);
+        setTimeout(() => {
+          setShowBarGraph(false);
+          beginNewRound();
+        }, 2000);
       }
     },
     [correctIndex, beginNewRound],
@@ -223,17 +258,69 @@ export default function ColorChords() {
         </button>
       )}
 
-      {!isPlaying && colorOptions.length > 0 && (
+      {!isPlaying && colorOptions.length > 0 && !showBarGraph && (
         <div className="text-center">
-          <div className="grid grid-cols-3 gap-8">
-            {colorOptions.map((colorIdx, position) => (
-              <button
-                key={position}
-                onClick={() => onSwatchClick(colorIdx)}
-                className="h-24 w-24 rounded-full transition-transform hover:scale-110"
-                style={{ backgroundColor: swatchColors[colorIdx] }}
+          <div className="mb-12 flex items-end justify-center space-x-2">
+            {audioData.map((value, index) => (
+              <div
+                key={index}
+                className="w-4 bg-cyan-400 transition-all duration-75 ease-out"
+                style={{
+                  height: `${Math.max(4, value * 100)}px`,
+                }}
               />
             ))}
+          </div>
+          <div className="grid grid-cols-3 gap-8">
+            {colorOptions.map((colorIdx, position) => {
+              const isSelected = selectedColor === colorIdx;
+              return (
+                <div key={position} className="relative">
+                  <button
+                    onClick={() => onSwatchClick(colorIdx)}
+                    className={`h-24 w-24 rounded-full transition-all hover:scale-110 ${
+                      isSelected
+                        ? "ring-opacity-90 scale-105 ring-8 ring-white"
+                        : ""
+                    }`}
+                    style={{ backgroundColor: swatchColors[colorIdx] }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {showBarGraph && selectedColor !== null && (
+        <div className="flex items-center justify-center space-x-8">
+          <div
+            className="h-24 w-24 rounded-full shadow-lg transition-all duration-500"
+            style={{ backgroundColor: swatchColors[selectedColor] }}
+          />
+          <div className="flex flex-col space-y-3">
+            {swatchColors.map((color, index) => {
+              const count = colorHistory[index] || 0;
+              const maxCount = Math.max(...colorHistory, 1);
+              const barWidth = (count / maxCount) * 200;
+              return (
+                <div key={index} className="flex items-center space-x-2">
+                  <div
+                    className="h-6 w-6 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  <div className="h-4 w-52 overflow-hidden rounded-full bg-gray-700">
+                    <div
+                      className="h-full rounded-full transition-all duration-1000 ease-out"
+                      style={{
+                        backgroundColor: color,
+                        width: `${barWidth}px`,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
